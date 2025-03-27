@@ -24,16 +24,18 @@ public class UIAnimationEvents : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.I))
+        // Check if Ctrl is pressed along with I or O
+        bool ctrlPressed = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+
+        if (ctrlPressed && Input.GetKeyDown(KeyCode.I))
         {
             mainpage.DOFade(0, 0.8f).SetEase(Ease.OutExpo).OnComplete(() => 
             {
                 TriggerMoveIn();
                 mainpage.gameObject.SetActive(false);
             });
-            
         }
-        else if (Input.GetKeyDown(KeyCode.O))
+        else if (ctrlPressed && Input.GetKeyDown(KeyCode.O))
         {
             TriggerMoveOut();
             mainpage.gameObject.SetActive(true);
