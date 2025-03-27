@@ -25,7 +25,7 @@ public class UIAnimationEvents : MonoBehaviour
     private void Update()
     {
         // Check if Ctrl is pressed along with I or O
-        bool ctrlPressed = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        bool ctrlPressed = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift); 
 
         if (ctrlPressed && Input.GetKeyDown(KeyCode.I))
         {
