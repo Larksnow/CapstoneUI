@@ -64,7 +64,7 @@ public class PromptGenerator : MonoBehaviour
         if (!styleDictionary.ContainsKey(selectedStyle))
         {
             Debug.Log("Use custom style");
-            generatedPrompt = "";
+            generatedPrompt = userInput;
             return;
         }
         StyleDescription style = styleDictionary[selectedStyle];

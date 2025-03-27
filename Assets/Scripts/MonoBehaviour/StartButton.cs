@@ -11,7 +11,7 @@ public class StartButton : MonoBehaviour
     public void OnButtonClicked()
     {
         string userInput = userInputField.text;
-        if (userInput == "") return; // Check if the input field is empty
+        if (userInput == "" || communicator.IsProcessing) return; // Check if the input field is empty
         PromptGenerator.Instance.GenerateStylePrompt(userInput, styleSelector.styleSelect);
         string finalPrompt = PromptGenerator.Instance.generatedPrompt;
         Debug.Log("Sending prompt: " + finalPrompt);

@@ -2,32 +2,39 @@ using System.Collections;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
+using System;
 
 public class Communicator : MonoBehaviour
 {
     [Header("Ollama Settings")]
-    public string ollamaUrl = "http://localhost:11434/api/generate"; // Replace with your Ollama endpoint
-    public string modelName = "hf.co/whj9068/Demo_1"; // Replace with your model name
+    public string ollamaUrl = "http://localhost:11434/api/generate";
+    public string modelName = "hf.co/whj9068/Demo_1";
     public TextGenerator textGenerator;
+    public event Action OnProcessingStarted;
+    public event Action OnProcessingFinished;
     [TextArea] public string prompt = "What's the weather today?";
-
-    void Update()
-    {
-        // if (Input.GetKeyDown(KeyCode.Space))
-        // {
-        //     Debug.Log("Sending prompt to Ollama...");
-        //     StartCoroutine(SendPromptToOllama(prompt));
-        // }
-    }
-
+    
+    [Header("Request Settings")]
+    public float timeoutSeconds = 40f;
+    
+    public bool IsProcessing { get; private set; }
+    public event Action<string> OnResponseReceived;
+    public event Action<string> OnRequestFailed;
 
     public void StartSendingCoroutine(string prompt)
     {
+        if (IsProcessing)
+        {
+            Debug.LogWarning("Request already in progress");
+            return;
+        }
         StartCoroutine(SendPromptToOllama(prompt));
     }
 
     private IEnumerator SendPromptToOllama(string prompt)
     {
+        IsProcessing = true;
+        OnProcessingStarted?.Invoke();
         string jsonBody = JsonUtility.ToJson(new OllamaRequest
         {
             model = modelName,
@@ -42,25 +49,49 @@ public class Communicator : MonoBehaviour
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
 
-            yield return request.SendWebRequest();
+            // Start the request and timeout timer
+            UnityWebRequestAsyncOperation asyncOp = request.SendWebRequest();
+            float startTime = Time.time;
+            bool timedOut = false;
 
-            if (request.result == UnityWebRequest.Result.Success)
+            // Wait for request to complete or timeout
+            while (!asyncOp.isDone)
+            {
+                if (Time.time - startTime > timeoutSeconds)
+                {
+                    timedOut = true;
+                    request.Abort();
+                    break;
+                }
+                yield return null;
+            }
+
+            if (timedOut)
+            {
+                string timeoutMessage = "Timeout: Try again later";
+                Debug.LogError(timeoutMessage);
+                OnRequestFailed?.Invoke(timeoutMessage);
+                ChatSystem.Instance.AddLeftMessage(timeoutMessage);
+            }
+            else if (request.result == UnityWebRequest.Result.Success)
             {
                 string responseText = ExtractResponseText(request.downloadHandler.text);
                 Debug.Log("Ollama Response: " + responseText);
+                OnResponseReceived?.Invoke(responseText);
                 ChatSystem.Instance.AddLeftMessage(responseText);
             }
             else
             {
-                Debug.LogError("Error: " + request.error);
+                string errorMessage = "Error: " + request.error;
+                Debug.LogError(errorMessage);
+                OnRequestFailed?.Invoke(errorMessage);
+                ChatSystem.Instance.AddLeftMessage(errorMessage);
             }
         }
-    }
 
-    [System.Serializable]
-    public class OllamaResponse
-    {
-        public string response;
+        IsProcessing = false;
+        OnProcessingFinished?.Invoke();
+        yield break;
     }
 
     public string ExtractResponseText(string json)
@@ -73,8 +104,14 @@ public class Communicator : MonoBehaviour
         catch (System.Exception e)
         {
             Debug.LogError("Failed to parse response: " + e.Message);
-            return "";
+            return "Error: Could not parse response";
         }
+    }
+
+    [System.Serializable]
+    public class OllamaResponse
+    {
+        public string response;
     }
 
     [System.Serializable]

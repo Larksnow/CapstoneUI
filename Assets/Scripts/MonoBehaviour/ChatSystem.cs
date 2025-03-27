@@ -42,15 +42,15 @@ public class ChatSystem : MonoBehaviour
     {
         // Create new chat box
         GameObject newChatBox = Instantiate(prefab, content);
-        if (isRight)
-        {
-            SetTextToChatBox(newChatBox, message);
-        }else
-        {
-            StartCoroutine(TypeMessage(message, newChatBox.GetComponentInChildren<TextMeshProUGUI>()));
-        }
+        // if (isRight)
+        // {
+        //     SetTextToChatBox(newChatBox, message);
+        // }else
+        // {
+        //     StartCoroutine(TypeMessage(message, newChatBox.GetComponentInChildren<TextMeshProUGUI>()));
+        // }
         
-        
+        SetTextToChatBox(newChatBox, message);
         // Wait for layout calculation (2 frames)
         yield return null; 
         yield return null;
